@@ -23,22 +23,10 @@ class RoleSeeder extends Seeder
                 'name' => 'Super Administrator'
             ],
             [
-                'name' => 'Administrador Multimarca'
-            ],
-            [
-                'name' => 'Administrator'
-            ],
-            [
-                'name' => 'AAA Distributor'
-            ],
-            [
                 'name' => 'Distributor'
             ],
             [
                 'name' => 'Seller'
-            ],
-            [
-                'name' => 'Limited'
             ]
         ];
 

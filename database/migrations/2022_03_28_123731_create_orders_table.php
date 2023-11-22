@@ -19,8 +19,7 @@ class CreateOrdersTable extends Migration
             $table->string('sales_type');
             $table->unsignedBigInteger('user_id');
             $table->string('user_name');
-            $table->string('user_brand_id')->nullable();
-            $table->string('qv_offering_id');
+            $table->string('offering_id');
             $table->string('imei')->nullable();
             $table->string('msisdn')->nullable();
             $table->string('name')->nullable();
@@ -59,7 +58,7 @@ class CreateOrdersTable extends Migration
                 ->references('id')
                 ->on('brands')
                 ->nullOnDelete();
-            
+
             $table
                 ->foreign('portability_id')
                 ->references('id')

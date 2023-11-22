@@ -19,7 +19,6 @@ class CreatePortabilitiesTable extends Migration
             $table->string('email');
             $table->string('nip');
             $table->string('msisdn');
-            $table->string('msisdn_temp');
             $table->string('iccid');
             $table->timestamps();
         });

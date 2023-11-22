@@ -17,7 +17,7 @@ class CreateUsersTable extends Migration
             $table->id();
             $table->unsignedBigInteger('role_id');
             $table->unsignedBigInteger('brand_id')->nullable();
-            $table->unsignedBigInteger('primary_brand_id')->nullable();
+            $table->unsignedBigInteger('distributor_id')->nullable();
             $table->string('name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
@@ -41,9 +41,9 @@ class CreateUsersTable extends Migration
                 ->nullOnDelete();
 
             $table
-                ->foreign('primary_brand_id')
+                ->foreign('distributor_id')
                 ->references('id')
-                ->on('brands')
+                ->on('users')
                 ->nullOnDelete();
         });
     }
