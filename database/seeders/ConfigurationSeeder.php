@@ -27,78 +27,78 @@ class ConfigurationSeeder extends Seeder
                 'is_protected' => true
             ],
             [
-                'label' => 'Notifications Email',
-                'code' => 'notifications_email',
+                'label' => 'Notifications Email Sandbox',
+                'code' => 'notifications_email_sandbox',
                 'value' => 'jreyes@saycocorporativo.com',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Access Token BIP',
-                'code' => 'url_token_bip',
+                'label' => 'URL Access Token BIP Sandbox',
+                'code' => 'url_token_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/token',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Map',
-                'code' => 'url_map_bip',
+                'label' => 'URL Map Sandbox',
+                'code' => 'url_map_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/tools/location_info',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Postal Code',
-                'code' => 'url_postal_code_bip',
+                'label' => 'URL Postal Code Sandbox',
+                'code' => 'url_postal_code_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/tools/cp_info',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Info IMEI',
-                'code' => 'url_imei_bip',
+                'label' => 'URL Info IMEI Sandbox',
+                'code' => 'url_imei_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/tools/imei_check',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Offering',
-                'code' => 'url_offering_bip',
+                'label' => 'URL Offering Sandbox',
+                'code' => 'url_offering_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/purchase',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Recharge',
-                'code' => 'url_recharge_bip',
+                'label' => 'URL Recharge Sandbox',
+                'code' => 'url_recharge_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/recharge',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Activation',
-                'code' => 'url_activation_bip',
+                'label' => 'URL Activation Sandbox',
+                'code' => 'url_activation_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/activation',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Offering ESIM',
-                'code' => 'url_offering_esim_bip',
+                'label' => 'URL Offering ESIM Sandbox',
+                'code' => 'url_offering_esim_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/purchase_esim',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Portability',
-                'code' => 'url_portability_bip',
+                'label' => 'URL Portability Sandbox',
+                'code' => 'url_portability_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/portability',
                 'group' => 'General',
                 'is_protected' => true
             ],
             [
-                'label' => 'URL Recharge ESIM',
-                'code' => 'url_recharge_esim_bip',
+                'label' => 'URL Recharge ESIM Sandbox',
+                'code' => 'url_recharge_esim_bip_sandbox',
                 'value' => 'https://api-sandbox.igou.mx/v1/recharge_esim',
                 'group' => 'General',
                 'is_protected' => true

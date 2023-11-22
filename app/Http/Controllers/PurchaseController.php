@@ -14,12 +14,14 @@ use App\Models\Offering;
 use App\Models\Order;
 use App\Models\Portability;
 use App\Models\User;
+use App\Traits\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Http;
 
 class PurchaseController extends Controller
 {
+    use Helpers;
     /**
      * Return a list of offerings to initiate the purchase process
      *
@@ -28,6 +30,8 @@ class PurchaseController extends Controller
     public function index()
     {
         $account = auth()->user()->account;
+
+        dd($this->getRouteName());
 
         if ($account) {
             $offerings = Offering::getOfferingsByUserBrand(false);
@@ -132,7 +136,7 @@ class PurchaseController extends Controller
         try {
             if ($request->portabilidad === 'on') {
                 $portability = Portability::create($portability_attributes);
-            
+
                 self::portabilityNotification($portability);
 
                 $attributes['portability_id'] = $portability->id;
