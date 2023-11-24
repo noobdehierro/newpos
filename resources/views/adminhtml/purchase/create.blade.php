@@ -28,14 +28,16 @@
                                     }
                                 </x-slot>
                                 <div class="row">
-                                <div class="col-12">
+                                    <div class="col-12">
                                         <h5 class="mt-1 mb-3">Compatibilidad</h5>
                                         <x-flash type="info" dismiss="yes">
                                             <p class="font-weight-bold">Hay tres maneras de obtener tu IMEI</p>
                                             <ul>
                                                 <li>Marca *#06# desde el teléfono celular a revisar.</li>
-                                                <li>Búscalo en la configuración del teléfono celular, son entre 15 y 17 números</li>
-                                                <li>Encuéntralo impreso en la etiqueta de la batería del teléfono celular</li>
+                                                <li>Búscalo en la configuración del teléfono celular, son entre 15 y 17
+                                                    números</li>
+                                                <li>Encuéntralo impreso en la etiqueta de la batería del teléfono
+                                                    celular</li>
                                             </ul>
                                         </x-flash>
                                         <x-form-input name="imei" size="m">IMEI</x-form-input>
@@ -60,7 +62,8 @@
                                                 value="{{ $offering->brand->name }}"></x-form-input>
                                             <x-form-input name="total" type="hidden" value="{{ $offering->price }}">
                                             </x-form-input>
-                                            <x-form-input name="seller_price" type="hidden" value="{{ $offering->seller_price }}">
+                                            <x-form-input name="seller_price" type="hidden"
+                                                value="{{ $offering->seller_price }}">
                                             </x-form-input>
                                             <x-form-input name="channel" type="hidden" value="POS"></x-form-input>
                                             <x-form-input name="name" required="true" size="m">Nombre
@@ -73,11 +76,11 @@
                                             </x-form-input>
                                             <x-form-input name="birday" type="date" size="s">Fecha de
                                                 nacimiento</x-form-input>
-                                                <div class="iccidContainer">
+                                            <div class="iccidContainer">
                                                 <span class="m-t-15">{{ $iccid_prefix }}</span>
-                                            <x-form-input name="iccid" required="true" type="tel" minlenght="8" maxlenght="8"
-                                                size="m">ICCID</x-form-input>
-                                                </div>
+                                                <x-form-input name="iccid" required="true" type="tel"
+                                                    minlenght="8" maxlenght="8" size="m">ICCID</x-form-input>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-12">
@@ -113,13 +116,14 @@
                                         </x-form-switch>
 
                                         <div id="pannel_portabilidad" class="pannel">
-                                        <x-flash type="info" dismiss="yes">
-                                            <p class="font-weight-bold">Hay dos formas de obtener tu NIP</p>
-                                            <ul>
-                                                <li>Envia un SMS al 051 con la palabra NIP, llama al 051 desde el SIM de tu telefonía anterior</li>
-                                                <li>Llama al 051 desde el SIM de tu telefonía anterior</li>
-                                            </ul>
-                                        </x-flash>
+                                            <x-flash type="info" dismiss="yes">
+                                                <p class="font-weight-bold">Hay dos formas de obtener tu NIP</p>
+                                                <ul>
+                                                    <li>Envia un SMS al 051 con la palabra NIP, llama al 051 desde el
+                                                        SIM de tu telefonía anterior</li>
+                                                    <li>Llama al 051 desde el SIM de tu telefonía anterior</li>
+                                                </ul>
+                                            </x-flash>
                                             <div class="row">
                                                 <x-form-input name="nip" size="s">NIP</x-form-input>
                                                 <x-form-input name="msisdn" required="true" size="s">Número a
@@ -190,7 +194,7 @@
                                                 $('#imei').focusout(function() {
 
                                                     $.ajax({
-                                                        url: '{{ route('compatibility.checkjquery') }}',
+                                                        url: '{{ route('compatibility.checkImei') }}',
                                                         type: 'POST',
                                                         data: {
                                                             imei: $('#imei').val()

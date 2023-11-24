@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\Configuration;
+use App\Traits\Helpers;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -12,6 +14,8 @@ use Illuminate\Support\Facades\Http;
 
 class CompatibilityController extends Controller
 {
+    use Helpers;
+
     /**
      * Display a listing of the resource.
      *
@@ -54,26 +58,12 @@ class CompatibilityController extends Controller
         }
     }
 
-    public function checkjquery(Request $request)
+    public function checkImei(Request $request)
     {
+
         try {
-            $token = self::altanGetToken()->accessToken;
-
-            $configuration = Configuration::wherein('code', [
-                'altan_device_info_endpoint',
-                'altan_identificator'
-            ])->get();
-
-            $response = Http::withToken($token)->get($configuration[0]->value, [
-                'identifierValue' => $request->imei,
-                'identifierType' => $configuration[1]->value
-            ]);
-
-            $device = json_decode($response);
-
-            //ddd($device->deviceFeatures->band28);
-
-            return $device;
+            $imei = $this->getCheckImei(auth()->user()->brand_id, $request->imei);
+            return $imei;
         } catch (\Exception $exception) {
             return $exception->getMessage();
         }

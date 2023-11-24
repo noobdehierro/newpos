@@ -29,39 +29,11 @@ class PurchaseController extends Controller
      */
     public function index()
     {
-        $account = auth()->user()->account;
 
-        dd($this->getRouteName());
+        $brand_id = auth()->user()->brand_id;
 
-        if ($account) {
-            $offerings = Offering::getOfferingsByUserBrand(false);
-
-            try {
-                $order = Order::where([
-                    ['status', '=', 'Pending'],
-                    ['sales_type', '=', 'Contratación'],
-                    ['user_id', '=', auth()->user()->id]
-                ])->first();
-
-                return view('adminhtml.purchase.index', [
-                    'offerings' => $offerings,
-                    'order' => $order
-                ]);
-            } catch (\Exception $exception) {
-                return back()->with('error', $exception->getMessage());
-            }
-        } else {
-            $offerings = [];
-            $order = [];
-
-            return view('adminhtml.purchase.index', [
-                'offerings' => $offerings,
-                'order' => $order
-            ])->with(
-                'infoMsg',
-                'Usted no tiene una cuenta activa para realizar movimientos.'
-            );
-        }
+        $iccid_prefix = Brand::where('id', $brand_id)->value('iccid_prefix');
+        return view('adminhtml.purchase.index', ['iccid_prefix' => $iccid_prefix]);
     }
 
     /**
