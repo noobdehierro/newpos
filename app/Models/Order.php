@@ -118,14 +118,14 @@ class Order extends Model
         $user = auth()->user();
 
         if ($user->can('brandAdmin')) {
-        $brand = Brand::all();
+            $brand = Brand::all();
         } else {
-        $brand = auth()->user()->brand_id;
-        $query->when($brand, function ($query) use ($brand) {
-            $query->where('user_brand_id', $brand);
-        });
-    }
-        
+            $brand = auth()->user()->brand_id;
+            $query->when($brand, function ($query) use ($brand) {
+                $query->where('user_brand_id', $brand);
+            });
+        }
+
 
         $query->when($filters['initDate'] ?? false, function ($query) use ($filters) {
             $query->when($filters['endDate'] ?? false, function ($query) use ($filters) {
@@ -190,5 +190,10 @@ class Order extends Model
         $query->when($filters['user_name'] ?? false, function ($query) use ($filters) {
             $query->where('user_name', $filters['user_name']);
         });
+    }
+
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class);
     }
 }

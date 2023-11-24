@@ -50,7 +50,7 @@ class AccountController extends Controller
     {
         $attributes = $request->validate([
             'user_id' => ['required', Rule::exists('users', 'id')],
-            'brand_id' => ['required', Rule::exists('brands', 'id')],
+            // 'brand_id' => ['required', Rule::exists('brands', 'id')],
             'name' => 'nullable',
             'amount' => 'nullable'
         ]);
@@ -94,7 +94,6 @@ class AccountController extends Controller
             'movements' => Movement::where('account_id', $account->id)->sortable()->get()
 
         ]);
-
     }
 
     /**
@@ -123,7 +122,6 @@ class AccountController extends Controller
         return redirect()
             ->route('accounts.index')
             ->with('success', 'Se actualizo la cuenta correctamente.');
-
     }
     /**
      * Remove the specified resource from storage.

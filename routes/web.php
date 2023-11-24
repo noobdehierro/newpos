@@ -76,7 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/purchase', [PurchaseController::class, 'store'])->name(
         'purchase.store'
     );
-    Route::get('/purchase/{offering}/create', [
+    Route::get('/purchase/{order}/create', [
         PurchaseController::class,
         'create'
     ])->name('purchase.create');
@@ -229,8 +229,6 @@ Route::middleware('auth')->group(function () {
         VendorController::class,
         'export'
     ])->name('vendors.export');
-
-
 });
 
 /** Auth Routes */

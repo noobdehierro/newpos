@@ -29,11 +29,31 @@ class PurchaseController extends Controller
      */
     public function index()
     {
+        $account = auth()->user()->account;
+        $iccid_prefix = Brand::where('id', auth()->user()->brand_id)->value('iccid_prefix');
 
-        $brand_id = auth()->user()->brand_id;
+        if ($account) {
+            $order = Order::where([
+                ['status', '=', 'Pending'],
+                ['sales_type', '=', 'Contratación'],
+                ['user_id', '=', auth()->user()->id]
+            ])->first();
 
-        $iccid_prefix = Brand::where('id', $brand_id)->value('iccid_prefix');
-        return view('adminhtml.purchase.index', ['iccid_prefix' => $iccid_prefix]);
+            return view('adminhtml.purchase.index', [
+                'iccid_prefix' => $iccid_prefix,
+                'order' => $order
+            ]);
+        } else {
+            $order = [];
+
+            return view('adminhtml.purchase.index', [
+                'iccid_prefix' => $iccid_prefix,
+                'order' => $order
+            ])->with(
+                'infoMsg',
+                'Usted no tiene una cuenta activa para realizar movimientos.'
+            );
+        }
     }
 
     /**
@@ -41,11 +61,14 @@ class PurchaseController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
      */
-    public function create(Offering $offering)
+    public function create(Order $order)
     {
-        $iccidPrefix = Brand::where('id', $offering->brand_id)->value('iccid_prefix');
 
-        return view('adminhtml.purchase.create', ['offering' => $offering, 'iccid_prefix' => $iccidPrefix]);
+        $offering = $this->getOfferingsActive($order->brand_id, $order->iccid);
+        $msisdn = $offering["msisdn"];
+        $offeringsArray =  $offering["offerings"];
+
+        return view('adminhtml.purchase.create', ['offerings' => $offeringsArray, 'order' => $order, 'msisdn' => $msisdn]);
     }
 
     /**
@@ -56,16 +79,15 @@ class PurchaseController extends Controller
      */
     public function store(Request $request)
     {
+
+        // dd($request->all());
         $attributes = $request->validate([
-            'status' => 'required',
-            'sales_type' => 'required',
-            'user_id' => 'nullable',
-            'user_name' => 'required',
-            'qv_offering_id' => 'required',
-            'brand_id' => 'required',
-            'brand_name' => 'required',
-            'total' => 'required',
-            'channel' => 'required',
+            'status' => 'required', // hidden
+            'sales_type' => 'required', // hidden
+            'user_id' => 'required', // hidden
+            'user_name' => 'required', // hidden
+            'brand_id' => 'required', // hidden
+            'channel' => 'required', // hidden
             'name' => 'required',
             'lastname' => 'required',
             'email' => 'required|email',
@@ -81,12 +103,11 @@ class PurchaseController extends Controller
             'suburb' => 'required',
             'city' => 'required',
             'region' => 'required',
-            'seller_price' => 'required',
-            'portability_id' => 'nullable',
-            'user_brand_id' => 'nullable'
+            'nip' => 'nullable',
+            'msisdn' => 'nullable',
         ]);
 
-        $iccidPrefix = Brand::where('id', $request->brand_id)->value('iccid_prefix');
+        $iccidPrefix = Brand::where('id', $attributes['brand_id'])->value('iccid_prefix');
 
         if ($request->portabilidad === 'on') {
             $portability_attributes = $request->validate([
@@ -94,7 +115,6 @@ class PurchaseController extends Controller
                 'email' => 'nullable',
                 'nip' => 'required|numeric',
                 'msisdn' => 'required',
-                'msisdn_temp' => 'nullable',
                 'iccid' => 'nullable'
             ]);
 
@@ -102,28 +122,27 @@ class PurchaseController extends Controller
                 $request->name . ' ' . $request->lastname;
             $portability_attributes['email'] = $request->email;
             $portability_attributes['iccid'] = $iccidPrefix . $request->iccid;
-            $portability_attributes['msisdn_temp'] = $request->msisdn_temp ?? 'no asignado';
+
+            $portability_attributes['brand_id'] = auth()->user()->brand_id;
+            $portability_attributes['user_id'] = auth()->user()->id;
         }
 
         try {
             if ($request->portabilidad === 'on') {
                 $portability = Portability::create($portability_attributes);
 
-                self::portabilityNotification($portability);
+                // self::portabilityNotification($portability);
 
                 $attributes['portability_id'] = $portability->id;
             }
             $attributes['iccid'] = $iccidPrefix . $request->iccid;
-            $attributes['user_brand_id'] = auth()->user()->brand_id;
+            $attributes['brand_id'] = auth()->user()->brand_id;
             $attributes['user_id'] = auth()->user()->id;
             $order = Order::create($attributes);
-            return redirect()
-                ->route('purchase.payment', $order)
-                ->with(
-                    'warning',
-                    'Se ha registrado la información correctamente.'
-                );
+            ddd($order);
+            return redirect()->route('purchase.payment', $order->id);
         } catch (\Exception $exception) {
+            ddd($exception->getMessage());
             return back()->with('error', $exception->getMessage());
         }
     }
@@ -158,6 +177,9 @@ class PurchaseController extends Controller
      */
     public function payment(Order $order)
     {
+
+        dd($order);
+
         $balance = Balance::where('brand_id', auth()->user()->primary_brand_id)
             ->latest()
             ->first();

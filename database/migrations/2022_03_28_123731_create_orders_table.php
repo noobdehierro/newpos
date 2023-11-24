@@ -19,7 +19,11 @@ class CreateOrdersTable extends Migration
             $table->string('sales_type');
             $table->unsignedBigInteger('user_id');
             $table->string('user_name');
-            $table->string('offering_id');
+            $table->string('offering_id')->nullable();
+            $table->string('offering_name')->nullable();
+            $table->string('offering_description')->nullable();
+            $table->decimal('total')->default(0);
+            $table->unsignedBigInteger('brand_id')->nullable();
             $table->string('imei')->nullable();
             $table->string('msisdn')->nullable();
             $table->string('name')->nullable();
@@ -39,12 +43,9 @@ class CreateOrdersTable extends Migration
             $table->string('payment_method')->nullable();
             $table->string('payment_id')->nullable();
             $table->string('reference_id')->nullable();
-            $table->unsignedBigInteger('brand_id')->nullable();
-            $table->string('brand_name')->default('Figou');
+            $table->string('response')->nullable();
             $table->unsignedBigInteger('portability_id')->nullable();
             $table->string('channel')->default('pos');
-            $table->decimal('total')->default(0);
-            $table->decimal('seller_price')->default(0);
             $table->timestamps();
 
             $table

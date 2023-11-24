@@ -20,6 +20,7 @@ class CreatePortabilitiesTable extends Migration
             $table->string('nip');
             $table->string('msisdn');
             $table->string('iccid');
+            $table->string('response')->nullable();
             $table->timestamps();
         });
     }

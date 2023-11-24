@@ -168,9 +168,20 @@ trait Helpers
             "iccid" => $iccid
         ];
 
-        $response = Http::withHeaders($headers)->get($url_activation, $body)->json();
+        $offers = Http::withHeaders($headers)->get($url_activation, $body)->json();
+        $msisdn = $offers["data"]["msisdn"];
+        // dd($offers);
 
-        return $response;
+        $offerings = [];
+        if (!empty($offers["data"]["offerings"])) {
+            foreach ($offers["data"]["offerings"] as $offer) {
+                array_push($offerings, $this->fill_offering_data($offer, 'active'));
+            }
+        }
+        // dd($offerings);
+
+
+        return ["offerings" => $offerings, "msisdn" => $msisdn];
     }
 
     public function getCheckImei(int $brand, int $imei)
@@ -255,5 +266,45 @@ trait Helpers
         $response = Http::withHeaders($headers)->get($url_postal_code, $body)->json();
 
         return $response;
+    }
+
+    public function fill_offering_data($offering, $type)
+    {
+
+
+        $id = null;
+
+        if ($type == 'recarga') {
+            $id = $offering["supplementary_id"];
+        } else if ($type == 'active') {
+            $id = $offering["supplementary_id"];
+        } else if ($type == 'contrata') {
+            $id = $offering["supplementary_id"];
+        } else if ($type == 'esim') {
+            $id = $offering["supplementary_id"];
+        }
+
+        $productId = $id;
+        $specialPrice = $offering["price"] ?? $offering["total_price"];
+        $price = $specialPrice . ' ' . 'MXN';
+        $origDescription = $offering["description"];
+        $descLines = preg_split("/\r\n|\r|\n/", $origDescription);
+        $description = '<ul>';
+        $internalName = $offering["name"] ?? '';
+
+        foreach ($descLines as $descLine) {
+            $description .= '<li>' . $descLine . '</li>';
+        }
+
+        $description .= '</ul>';
+
+        return [
+            'offering_id' => $productId,
+            'display_name' => $offering["display_name"] ?? $offering["offering_name"],
+            'price' => $price,
+            'specialPrice' => $specialPrice,
+            'description' => $description,
+            'internalName' => $internalName
+        ];
     }
 }
