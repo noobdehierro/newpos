@@ -34,4 +34,9 @@ class Balance extends Model
     {
         return $this->belongsTo(Brand::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

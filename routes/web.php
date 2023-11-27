@@ -80,10 +80,12 @@ Route::middleware('auth')->group(function () {
         PurchaseController::class,
         'create'
     ])->name('purchase.create');
-    Route::get('/purchase/{order}/payment', [
+
+    Route::post('/purchase/{order}/payment', [
         PurchaseController::class,
         'payment'
     ])->name('purchase.payment');
+
     Route::put('/purchase/{order}/confirm', [
         PurchaseController::class,
         'confirm'

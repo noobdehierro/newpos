@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\Brand;
 use App\Models\Configuration;
+use App\Models\Order;
 use Illuminate\Support\Facades\Http;
 
 trait Helpers
@@ -124,10 +125,22 @@ trait Helpers
             "msisdn" => $msisdn
         ];
 
-        $response = Http::withHeaders($headers)->get($url_recharge, $body)->json();
+        $offers = Http::withHeaders($headers)->get($url_recharge, $body)->json();
 
 
-        return $response;
+        $email = $offers["data"]["email"] ?? null;
+        // dd($offers);
+
+        $offerings = [];
+        if (!empty($offers["data"]["offerings"])) {
+            foreach ($offers["data"]["offerings"] as $offer) {
+                array_push($offerings, $this->fill_offering_data($offer, 'recarga'));
+            }
+        }
+        // dd($offerings);
+
+
+        return ["offerings" => $offerings, "email" => $email];
     }
 
     public function getOfferingsActive(int $brand, int $iccid)
@@ -169,7 +182,7 @@ trait Helpers
         ];
 
         $offers = Http::withHeaders($headers)->get($url_activation, $body)->json();
-        $msisdn = $offers["data"]["msisdn"];
+        $msisdn = $offers["data"]["msisdn"] ?? null;
         // dd($offers);
 
         $offerings = [];
@@ -277,11 +290,11 @@ trait Helpers
         if ($type == 'recarga') {
             $id = $offering["supplementary_id"];
         } else if ($type == 'active') {
-            $id = $offering["supplementary_id"];
+            $id = $offering["offering_id"];
         } else if ($type == 'contrata') {
-            $id = $offering["supplementary_id"];
+            $id = $offering["bundle_id"];
         } else if ($type == 'esim') {
-            $id = $offering["supplementary_id"];
+            $id = $offering["offering_id"];
         }
 
         $productId = $id;
@@ -306,5 +319,73 @@ trait Helpers
             'description' => $description,
             'internalName' => $internalName
         ];
+    }
+    public function postOfferingsActive(Order $order)
+    {
+
+        $configuration = Configuration::wherein('code', [
+            'is_sandbox',
+            'url_activation_bip_sandbox',
+            'url_activation_bip'
+        ])->get();
+
+        foreach ($configuration as $config) {
+            if ($config->code == 'is_sandbox') {
+                $is_sandbox = $config->value;
+            }
+            if ($config->code == 'url_activation_bip_sandbox') {
+                $url_activation_bip_sandbox = $config->value;
+            }
+            if ($config->code == 'url_activation_bip') {
+                $url_activation_bip = $config->value;
+            }
+        }
+
+        if ($is_sandbox === 'true') {
+            $url = $url_activation_bip_sandbox;
+        } else {
+            $url = $url_activation_bip;
+        }
+
+        $token = $this->getTokenBip(Brand::find($order->brand_id));
+
+        $body = [
+            "user" => [
+                "name" => $order->name,
+                "last_name" => $order->lastname,
+                "middle_name" => "",
+                "phone" => $order->telephone,
+                "email" => $order->email
+            ],
+            "address" => [
+                "street" => $order->street,
+                "external_number" => $order->outdoor,
+                "internal_number" => $order->indoor,
+                "city" => $order->city,
+                "neighborhood" => $order->suburb,
+                "state" => $order->region,
+                "postal_code" => $order->postcode,
+                "shipping_reference" => ""
+            ],
+            "service" => [
+                "msisdn" => $order->msisdn,
+                "offering_id" => $order->msisdn
+            ],
+            "payment" => [
+                "amount" => $order->total,
+                "payment_method" => $order->payment_method,
+                "payment_method_name" => "POS-Conekta-" . $order->payment_method . "-" . $order->reference_id,
+                "concept" => "Pago Activación de Sim",
+            ]
+        ];
+
+        $headers = [
+            "Accept" => "application/json",
+            "Authorization" => "Bearer " . $token
+        ];
+
+        $response = Http::withHeaders($headers)->post($url, $body)->json();
+
+        return $response;
     }
 }

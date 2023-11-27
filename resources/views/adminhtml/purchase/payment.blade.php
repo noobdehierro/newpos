@@ -5,7 +5,7 @@
     @endpush
 
     @push('scripts')
-            <script type="text/javascript" src="https://pay.conekta.com/v1.0/js/conekta-checkout.min.js"></script>
+        <script type="text/javascript" src="https://pay.conekta.com/v1.0/js/conekta-checkout.min.js"></script>
     @endpush
 
     <div class="card">
@@ -21,35 +21,39 @@
                 <div class="col-xl-12">
                     <div class="card user-list">
                         <div class="card-block pb-0">
-                            <x-form id="payment_form" method="PUT" action="{{ route('purchase.confirm', $order->id) }}">
+                            <x-form id="payment_form" method="PUT"
+                                action="{{ route('purchase.confirm', $order->id) }}">
                                 @csrf
                                 @method('PUT')
                                 <h5 class="mt-1 mb-3 border-b-2">Métodos de pago</h5>
                                 <hr>
                                 <input type="hidden" name="payment_method" id="payment_method" value="">
                                 <input type="hidden" name="user_id" id="user_id" value="{{ auth()->user()->id }}">
-                                <input type="hidden" name="user_name" id="user_name" value="{{ auth()->user()->name }}">
-                                @if(auth()->user()->sales_limit > auth()->user()->account->amount + $order->total)
-                                    @if($balance && $balance->balance > $order->total)
-                                    <button id="cash" class="btn btn-primary" type="button" data-payment="Efectivo">Efectivo</button>
+                                <input type="hidden" name="user_name" id="user_name"
+                                    value="{{ auth()->user()->name }}">
+                                @if (auth()->user()->sales_limit > auth()->user()->account->amount + $order->total)
+                                    @if ($balance && $balance->balance > $order->total)
+                                        <button id="cash" class="btn btn-primary" type="button"
+                                            data-payment="Efectivo">Efectivo</button>
                                     @endif
-                                    <button id="seller_card" class="btn btn-primary" type="button" data-payment="Tarjeta_vendedor">Tarjeta de vendedor</button>
-                                    <button id="card" class="btn btn-primary" type="button" data-payment="Tarjeta">Tarjeta de crédito/débito</button>
+                                    <button id="card" class="btn btn-primary" type="button"
+                                        data-payment="Tarjeta">Tarjeta de crédito/débito</button>
                                 @else
                                     <div class="alert-warning alert-dismissible fade show alert" role="alert">
                                         Lo sentimos, esta venta exede su limite establecido.
-                                        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>
+                                        <button type="button" class="close" data-dismiss="alert"
+                                            aria-label="Close"><span aria-hidden="true">×</span></button>
                                     </div>
                                 @endif
                                 <div id="cash_confirm" style="display: none;" class="row">
                                     <div class="col-12">
-                                        <button class="btn-block btn-primary mt-5 mb-3 p-25" type="submit">Confirmar</button>
+                                        <button class="btn-block btn-primary mt-5 mb-3 p-25"
+                                            type="submit">Confirmar</button>
                                     </div>
                                 </div>
                                 <div id="conekta_credit_card" class="row" style="display: none">
                                     <div class="col-md-6">
-                                        @if(isset($conekta))
-
+                                        @if (isset($conekta))
                                             <div id="conektaIframeContainer" style="height: 595px;"></div>
                                             <script type="text/javascript">
                                                 window.ConektaCheckoutComponents.Card({
@@ -99,12 +103,14 @@
                                     </div>
                                 </div>
                             </x-form>
-                            <x-form id="conekta_form" method="PUT" action="{{ route('purchase.conekta', $order->id) }}">
+                            <x-form id="conekta_form" method="PUT"
+                                action="{{ route('purchase.conekta', $order->id) }}">
                                 <x-form-input type="hidden" name="token" value=""></x-form-input>
-                                <x-form-input type="hidden" name="card_payment_method" id="card_payment_method" value=""></x-form-input>
+                                <x-form-input type="hidden" name="card_payment_method" id="card_payment_method"
+                                    value=""></x-form-input>
                             </x-form>
                             <script type="text/javascript">
-                                $(document).ready(function () {
+                                $(document).ready(function() {
 
                                     $.ajaxSetup({
                                         headers: {
@@ -112,21 +118,17 @@
                                         }
                                     });
 
-                                    $('#cash').on('click',function () {
+                                    $('#cash').on('click', function() {
                                         $('#conekta_credit_card').hide();
                                         $('#cash_confirm').show('slow');
                                         $('#payment_method').val('Efectivo');
                                     });
-                                    $('#card').on('click',function () {
+                                    $('#card').on('click', function() {
                                         $('#cash_confirm').hide();
                                         $('#conekta_credit_card').show('slow');
                                         $('#card_payment_method').val('Tarjeta');
                                     });
-                                    $('#seller_card').on('click',function () {
-                                        $('#cash_confirm').hide();
-                                        $('#conekta_credit_card').show('slow');
-                                        $('#card_payment_method').val('Tarjeta_vendedor');
-                                    });
+
                                 });
                             </script>
                         </div>

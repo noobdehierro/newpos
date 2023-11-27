@@ -27,8 +27,8 @@ class ConfigurationSeeder extends Seeder
                 'is_protected' => true
             ],
             [
-                'label' => 'Notifications Email Sandbox',
-                'code' => 'notifications_email_sandbox',
+                'label' => 'Notifications Email',
+                'code' => 'notifications_email',
                 'value' => 'jreyes@saycocorporativo.com',
                 'group' => 'General',
                 'is_protected' => true
@@ -102,7 +102,21 @@ class ConfigurationSeeder extends Seeder
                 'value' => 'https://api-sandbox.igou.mx/v1/recharge_esim',
                 'group' => 'General',
                 'is_protected' => true
-            ]
+            ],
+            [
+                'label' => 'Conekta Public API Key Sandbox',
+                'code' => 'conekta_public_api_key_sandbox',
+                'value' => 'key_F6vgsqYFZXnzxMUpXVCoWpw',
+                'group' => 'Payment',
+                'is_protected' => true
+            ],
+            [
+                'label' => 'Conekta Private API Key Sandbox',
+                'code' => 'conekta_private_api_key_sandbox',
+                'value' => 'key_gEmx4y9RkpQmqADqqxy1zw',
+                'group' => 'Payment',
+                'is_protected' => true
+            ],
 
         ];
 

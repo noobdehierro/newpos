@@ -10,12 +10,14 @@ use App\Models\Movement;
 use App\Models\Offering;
 use App\Models\Order;
 use App\Models\User;
+use App\Traits\Helpers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 
 class RechargeController extends Controller
 {
+    use Helpers;
     /**
      * Display a listing of the resource.
      *
@@ -56,74 +58,23 @@ class RechargeController extends Controller
      */
     public function create(Request $request)
     {
+
+        $msisdn = $request->msisdn;
+        $brand_id = auth()->user()->brand_id;
+
         try {
-            $configuration = Configuration::wherein('code', [
-                'is_sandbox',
-                'qvantel_offering_endpoint',
-                'qvantel_offering_endpoint_sandbox'
-            ])->get();
+            $response = $this->getOfferingsRecharge($brand_id, $msisdn);
 
-            foreach ($configuration as $config) {
-                if ($config->code == 'is_sandbox') {
-                    $is_sandbox = $config->value;
-                }
-                if ($config->code == 'qvantel_offering_endpoint') {
-                    $endpoint_live = $config->value;
-                }
-                if ($config->code == 'qvantel_offering_endpoint_sandbox') {
-                    $endpoint_sandbox = $config->value;
-                }
-            }
-
-            $msisdn = '52' . $request->msisdn;
-            $offerings = collect([]);
-
-            if ($is_sandbox === 'true') {
-                $endpoint = $endpoint_sandbox;
-            } else {
-                $endpoint = $endpoint_live;
-            }
-
-            $response = Http::withHeaders([
-                'x-channel' => 'self-service'
-            ])->get($endpoint, ['msisdn' => $msisdn]);
-
-            $responseObject = json_decode($response);
-
-            if (isset($responseObject->error)) {
-                throw new \Exception(
-                    'Sucedio un error al recuperar la información.'
-                );
-            }
-
-            $response_offerings = json_decode($response)->offerings;
-
-            foreach ($response_offerings as $item) {
-                if (!$item->subscriptionOffering) {
-                    $offering = new Offering();
-                    $offering->qv_offering_id = $item->productId;
-                    $offering->name = $item->productName;
-                    $offering->description = self::refactorDescription(
-                        $item->longDescription
-                    );
-                    $offering->promotion = $item->shortDescription;
-                    $offering->price = $item->prices[0]->taxIncludedAmount;
-
-                    // TODO Identificar marca de oferta
-                    $offering->brand_id = 3;
-
-                    $offerings->push($offering);
-                }
-            }
-
-            $sorted = $offerings->sortBy('price');
+            $offerings = $response['offerings'];
+            $email = $response['email'];
 
             return view('adminhtml.recharges.offerings', [
-                'offerings' => $sorted,
-                'msisdn' => $request->msisdn
+                'offerings' => $offerings,
+                'email' => $email
             ]);
-        } catch (\Exception $exception) {
-            return back()->with('error', $exception->getMessage());
+        } catch (\Throwable $th) {
+            //throw $th;
+            dd($th);
         }
     }
 
@@ -255,9 +206,9 @@ class RechargeController extends Controller
 
                 // if (!isset($response->errors)) {
 
-                    $lastBalance = Balance::where('brand_id', $order->brand_id)
-                        ->latest()
-                        ->first();
+                $lastBalance = Balance::where('brand_id', $order->brand_id)
+                    ->latest()
+                    ->first();
 
                 $newBalance = new Balance();
 
@@ -283,10 +234,10 @@ class RechargeController extends Controller
                 $movement->description = 'Cobro de efectivo';
                 $movement->operation = 'Recarga';
 
-                    $order->update();
-                    $newBalance->save();
-                    $movement->save();
-                    $user->account->update();
+                $order->update();
+                $newBalance->save();
+                $movement->save();
+                $user->account->update();
 
                 // } else {
                 //     throw new \Exception($response->error->message);
@@ -340,13 +291,13 @@ class RechargeController extends Controller
                     if (!isset($basketResponse->errors)) {
                         $basketId =
                             $basketResponse->basketsPaymentIntent->basketSummary
-                                ->basketId;
+                            ->basketId;
 
                         $paymentBody = [
                             'basket' => [
                                 'paymentMethod' => [
                                     'paymentMethodType' =>
-                                        'openpay-credit-card',
+                                    'openpay-credit-card',
                                     'params' => [
                                         [
                                             'name' => 'deviceSessionId',
@@ -359,7 +310,7 @@ class RechargeController extends Controller
                                         [
                                             'name' => 'description',
                                             'value' =>
-                                                'Recarga ' . $order->brand_name
+                                            'Recarga ' . $order->brand_name
                                         ]
                                     ]
                                 ]
@@ -376,7 +327,7 @@ class RechargeController extends Controller
 
                         $referenceId =
                             $paymentResponse->basketsPaymentIntent
-                                ->basketSummary->referenceNumber;
+                            ->basketSummary->referenceNumber;
                         $paymentId =
                             $paymentResponse->basketsPaymentIntent
                                 ->paymentIntent->result[0]->value;

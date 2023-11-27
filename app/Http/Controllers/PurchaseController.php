@@ -39,16 +39,20 @@ class PurchaseController extends Controller
                 ['user_id', '=', auth()->user()->id]
             ])->first();
 
+            // dd($order);
+
             return view('adminhtml.purchase.index', [
                 'iccid_prefix' => $iccid_prefix,
-                'order' => $order
+                'order' => $order,
+                'account' => $account
             ]);
         } else {
             $order = [];
 
             return view('adminhtml.purchase.index', [
                 'iccid_prefix' => $iccid_prefix,
-                'order' => $order
+                'order' => $order,
+                'account' => $account
             ])->with(
                 'infoMsg',
                 'Usted no tiene una cuenta activa para realizar movimientos.'
@@ -130,19 +134,19 @@ class PurchaseController extends Controller
         try {
             if ($request->portabilidad === 'on') {
                 $portability = Portability::create($portability_attributes);
-
                 // self::portabilityNotification($portability);
-
                 $attributes['portability_id'] = $portability->id;
             }
             $attributes['iccid'] = $iccidPrefix . $request->iccid;
             $attributes['brand_id'] = auth()->user()->brand_id;
             $attributes['user_id'] = auth()->user()->id;
             $order = Order::create($attributes);
-            ddd($order);
-            return redirect()->route('purchase.payment', $order->id);
+            $offering = $this->getOfferingsActive($order->brand_id, $order->iccid);
+            $msisdn = $offering["msisdn"];
+            $offeringsArray =  $offering["offerings"];
+            return view('adminhtml.purchase.create', ['offerings' => $offeringsArray, 'order' => $order, 'msisdn' => $msisdn]);
         } catch (\Exception $exception) {
-            ddd($exception->getMessage());
+
             return back()->with('error', $exception->getMessage());
         }
     }
@@ -175,14 +179,34 @@ class PurchaseController extends Controller
      *
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Contracts\View\View|\Illuminate\Http\Response
      */
-    public function payment(Order $order)
+    public function payment(Request $request, Order $order)
     {
 
-        dd($order);
+        $attributes = $request->validate([
+            'offering_id' => 'required',
+            'offering_description' => 'required',
+            'offering_name' => 'required',
+            'total' => 'required',
+            'msisdn' => 'required',
+        ]);
 
-        $balance = Balance::where('brand_id', auth()->user()->primary_brand_id)
+        // dd($attributes);
+
+
+        $order['offering_id'] = $attributes['offering_id'];
+        $order['offering_description'] = $attributes['offering_description'];
+        $order['offering_name'] = $attributes['offering_name'];
+        $order['total'] = $attributes['total'];
+        $order['msisdn'] = $attributes['msisdn'];
+        $order->update();
+
+
+
+        $balance = Balance::where('user_id', auth()->user()->id)
             ->latest()
             ->first();
+
+        // ddd($balance);
 
         $conekta_public_key = self::getConektaPublicConfiguration();
 
@@ -213,18 +237,24 @@ class PurchaseController extends Controller
         ]);
 
         try {
-            $lastBalance = Balance::where('brand_id', $order->brand_id)
+            $lastBalance = Balance::where('user_id', $request->user_id)
                 ->latest()
                 ->first();
             $newBalance = new Balance();
 
             $order->payment_method = $request->payment_method;
 
+            // 8%
+
+            $ganacia = floatval($order->total * 0.08);
+            // dd($ganacia);
+
+
             if ($order->payment_method == 'Efectivo') {
                 $newBalance->brand_id = $order->brand_id;
                 $newBalance->amount = -abs($order->total);
                 $newBalance->balance =
-                    $lastBalance->balance + $newBalance->amount;
+                    $lastBalance->balance + ($newBalance->amount + $ganacia);
                 $newBalance->operation = 'Retiro';
                 $newBalance->user_id = $request->user_id;
                 $newBalance->user_name = $request->user_name;
@@ -243,12 +273,26 @@ class PurchaseController extends Controller
             $movement->description = 'Cobro de efectivo';
             $movement->operation = 'Contratación';
 
+            $prefijo = "efectivo";
+            $digitos = 6;
+            $reference_id = $prefijo . str_pad($order->id, $digitos, "0", STR_PAD_LEFT);
+            $order->reference_id = $reference_id;
+
+            // $order->reference_id = $request->payment_method
+
             $order->update();
             $newBalance->save();
             $movement->save();
             $user->account->update();
-            self::activate_webhook($order);
-            self::purchaseNotification($order);
+
+            $response = $this->postOfferingsActive($order);
+
+
+            $order->response = $response["data"]["success"] ?? "fail";
+            $order->update();
+
+            // self::activate_webhook($order);
+            // self::purchaseNotification($order);
         } catch (\Exception $exception) {
             return back()->with('error', $exception->getMessage());
         }
@@ -269,15 +313,8 @@ class PurchaseController extends Controller
     {
         $conekta_private_key = self::getConektaConfiguration();
 
-        $totalOriginal = $order->total;
 
-        if ($request->card_payment_method == 'Tarjeta_vendedor') {
-            $order->total = $order->seller_price;
-            $payment_method = 'Tarjeta Vendedor';
-        } else {
-            $order->total = $totalOriginal;
-            $payment_method = 'Tarjeta';
-        }
+        $payment_method = 'Tarjeta';
 
         $conektaData = [
             'amount' => floatval($order->total) * 100,
@@ -318,8 +355,8 @@ class PurchaseController extends Controller
                     'unit_price' => floatval($order->total) * 100,
                     'quantity' => 1,
                     'description' => 'Plan ' . $order->brand_name,
-                    'sku' => $order->qv_offering_id,
-                    'brand' => $order->brand_name
+                    'sku' => $order->offering_id,
+                    'brand' => $order->brand->name
                 ]
             ],
             'charges' => [
@@ -332,6 +369,7 @@ class PurchaseController extends Controller
             ]
         ];
 
+
         try {
             $response = Http::withToken($conekta_private_key)
                 ->withHeaders([
@@ -342,6 +380,8 @@ class PurchaseController extends Controller
                 ->post('https://api.conekta.io/orders');
 
             $conektaOrder = json_decode($response);
+            // dd($response->json());
+
 
             if (
                 isset($conektaOrder->object) &&
@@ -357,14 +397,15 @@ class PurchaseController extends Controller
                     $order->payment_id = $conektaOrder->id;
                     $order->status = 'Complete';
 
-                    $user = auth()->user();
+                    // $user = auth()->user();
 
                     $order->update();
-                    $user->update();
+                    // $user->update();
 
-                    self::purchaseNotification($order);
-                    self::activate_webhook($order);
+                    $response = $this->postOfferingsActive($order);
 
+                    $order->response = $response["data"]["success"] ?? "fail";
+                    $order->update();
 
                     return redirect()
                         ->route('orders.index')
@@ -372,7 +413,8 @@ class PurchaseController extends Controller
                 }
             }
         } catch (\Exception $exception) {
-            return back()->with('error', $exception->getMessage());
+            dd($exception->getMessage());
+            // return back()->with('error', $exception->getMessage());
         }
     }
 
@@ -505,158 +547,5 @@ class PurchaseController extends Controller
         }
 
         return $conekta_public_key;
-    }
-
-    public function activate_webhook(Order $order)
-    {
-
-
-
-
-        $configuration = Configuration::wherein('code', [
-            'qvantel_webhook_sim_endpoint',
-            'qvantel_webhook_sim_api_key',
-        ])->get();
-
-        foreach ($configuration as $config) {
-
-            if ($config->code == 'qvantel_webhook_sim_endpoint') {
-                $qvantel_webhook_sim_endpoint = $config->value;
-            }
-            if ($config->code == 'qvantel_webhook_sim_api_key') {
-                $qvantel_webhook_sim_api_key = $config->value;
-            }
-        }
-
-        $endpoint = $qvantel_webhook_sim_endpoint;
-
-        $api_key = $qvantel_webhook_sim_api_key;
-
-
-        $apiURL = $endpoint;
-
-
-
-
-        // POST Data
-        $postInput = [
-            "basket" => [
-                "salesPersonId" => $order->user_name,
-                "paymentMethod" => [
-                    "paymentMethodId" => "openpay",
-                    "paymentMethodType" => "openpay-external-payment",
-                    "params" => []
-                ],
-                "basketItems" => [[
-                    "quantity" => 1,
-                    "characteristics" => [[
-                        "value" => "Activation",
-                        "key" => "CH_ServiceActivationType"
-                    ]],
-                    "productId" => $order->qv_offering_id ?? '',
-                    "CH_NumberResource" => $order->telephone,
-                    "CH_ICC" => $order->iccid,
-                    "useICC" => true
-                ]]
-            ],
-            "customer" => [
-                "individual" => [
-                    "nationality" => "MX",
-                    "gender" => "male",
-                    "familyName" => $order->lastname,
-                    "givenName" => $order->name,
-                ],
-                "contactMedia" => [[
-                    "role" => "primary",
-                    "validFor" => [
-                        "startDatetime" => "2018-04-12T10:07:51.276Z",
-                        "endDatetime" => "2032-04-12T10:07:51.276Z"
-                    ],
-                    "medium" => [
-                        "telephoneNumber" => [
-                            "number" => "string",
-                            "numberType" => "fixed-line"
-                        ],
-                        "emailAddress" => [
-                            "email" => $order->email,
-                        ],
-                        "postalAddress" => [
-                            "city" => $order->city,
-                            "coAddress" => $order->references,
-                            "apartment" => $order->indoor,
-                            "country" => "MX",
-                            "building" => $order->outdoor,
-                            "postalCode" => $order->postcode,
-                            "street" => $order->street,
-                            "stateOrProvince" => $order->region,
-                            "county" => $order->suburb,
-                        ]
-                    ]
-                ]],
-                "identifications" => [[
-                    "expirationDate" => "2024-11-25",
-                    "identificationId" => "12345678901",
-                    "issuingAuthority" => [
-                        "city" => $order->city,
-                        "name" => $order->name,
-                        "country" => "MX",
-                        "county" => $order->suburb,
-                        "stateOrProvince" => $order->region,
-                    ],
-                    "issuingDate" => "2018-04-12T10:07:51.276Z",
-                    "identificationType" => "personal-identity-code",
-                    "validFor" => [
-                        "startDatetime" => "2018-04-12T10:07:51.276Z",
-                        "endDatetime" => "2032-04-12T10:07:51.276Z"
-                    ]
-                ]]
-            ]
-        ];
-
-
-        // Headers
-        $headers = [
-            'Content-Type' => 'application/json',
-            'x-channel' => 'dealers',
-            'Authorization' => $api_key,
-
-
-        ];
-
-        $response = Http::withHeaders($headers)->post($apiURL, $postInput);
-
-        $statusCode = $response->status();
-        $responseBody = json_decode($response->getBody(), true);
-
-
-        Events::create([
-            'operacion' => 'Activacion de SIM',
-            'order_id' => $order->id,
-            'client_name' => $order->name . ' ' . $order->lastname,
-            'api_key' => $api_key,
-            'api_endpoint' => $endpoint,
-            'request' => json_encode($postInput),
-            'code' => $statusCode,
-            'response' => json_encode($responseBody),
-        ]);
-
-
-        if ($responseBody['status'] == 'error') {
-            $configuration = Configuration::wherein('code', [
-                'notifications_email'
-            ])->get();
-
-            $to = $configuration[0]->value;
-
-            Mail::to($to)->send(new ActivateSim($order, $responseBody['status']));
-        } else {
-            $configuration = Configuration::wherein('code', [
-                'notifications_email'
-            ])->get();
-
-            $to = $configuration[0]->value;
-
-            Mail::to($to)->send(new ActivateSim($order, $responseBody['status']));
-        }
     }
 }

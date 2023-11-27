@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Balance;
-use App\Models\Brand;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class BalanceController extends Controller
@@ -17,8 +17,8 @@ class BalanceController extends Controller
     {
         if (
             auth()
-                ->user()
-                ->can('super')
+            ->user()
+            ->can('super')
         ) {
             $balances = Balance::sortable()->orderBy('id', 'desc')->paginate(10);
             $last = 0;
@@ -37,6 +37,8 @@ class BalanceController extends Controller
 
         $current = $last ? $last->balance : 0;
 
+        // dd($current);
+
         return view('adminhtml.balances.index', [
             'balances' => $balances,
             'current' => $current
@@ -50,8 +52,9 @@ class BalanceController extends Controller
      */
     public function create()
     {
-        $brands = Brand::all();
-        return view('adminhtml.balances.create', ['brands' => $brands]);
+        $brand = auth()->user()->brand;
+        $users = User::where('brand_id', $brand->id)->get();
+        return view('adminhtml.balances.create', ['users' => $users]);
     }
 
     /**
@@ -63,14 +66,15 @@ class BalanceController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'brand_id' => 'required',
+            'user_id' => 'required',
             'amount' => 'required|numeric',
             'description' => 'nullable',
             'operation' => 'required'
         ]);
-
         try {
-            $lastBalance = Balance::latest()->first();
+            $lastBalance = Balance::where('user_id', $request->user_id)->latest()->first();
+
+            // dd($lastBalance);
 
             if ($lastBalance) {
                 $prevAmount = (float) $lastBalance->balance;
@@ -79,13 +83,13 @@ class BalanceController extends Controller
             }
 
             $balance = new Balance();
-            $balance->brand_id = $request->brand_id;
+            $balance->brand_id = auth()->user()->brand->id;
             $balance->amount = (float) $request->amount;
             $balance->balance = $prevAmount + (float) $request->amount;
             $balance->operation = $request->operation;
             $balance->description = $request->description;
             $balance->user_id = $request->user_id;
-            $balance->user_name = $request->user_name;
+            $balance->user_name = auth()->user()->name;
             $balance->save();
         } catch (\Exception $exception) {
             return back()->with('error', $exception->getMessage());

@@ -9,7 +9,7 @@
 
 
 <div class="col-md-3 col-xs-12">
-    <x-form action="{{ route('purchase.payment', $orderId) }}">
+    <x-form action="{{ route('recharges.store') }}">
 
         <div class="card offering-card">
             <div class="card-header">
